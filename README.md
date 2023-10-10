@@ -11,56 +11,251 @@
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+-   [Simple, fast routing engine](https://laravel.com/docs/routing).
+-   [Powerful dependency injection container](https://laravel.com/docs/container).
+-   Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+-   Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+-   Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+-   [Robust background job processing](https://laravel.com/docs/queues).
+-   [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Learning Laravel
+## Laravel Database
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Table Of Contents
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+-   [Debug Query](#debug-query)
+-   [CRUD SQL](#crud-sql)
+-   [Named Binding](#named-binding)
+-   [Database Transaction](#database-transaction)
+-   [Manual Database Transaction](#manual-database-transaction)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Debug Query
 
-## Laravel Sponsors
+Import Databse Facades
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+-   Pada kasus tertentu, kadang kita ingin melakukan debugging SQL query yang dibuat oleh laravel
+-   Kita bisa menggunakan `DB::Listen()`
+-   `DB::Listen` akan dipanggil setiap kali ada operasi yang dilakukan oleh Laravel Database
+-   Kita bisa me-log query misalnya
+-   Kita bisa daftarkan `DB::Listen()` pada Service Provider `AppServiceProvider.php`
 
-### Premium Partners
+```php
+namespace App\Providers;
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\ServiceProvider;
 
-## Contributing
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        DB::Listen(function (QueryExecuted $query) {
+            Log::info($query->sql);
+        });
+    }
+}
+```
 
-## Code of Conduct
+## CRUD SQL
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+-   Dengan menggunakan DB Facade, kita bisa melakukan Raw Query (query ke database secara manual)
+-   Walapun pada kenyataannya saat kita menggunakan Laravel, kita akan banyak menggunakan Eloquent ORM, tapi pada kasus tertentu kita butuh performa yang sangat cepat, ada baiknya kita lakukan menggunakan Raw Query
 
-## Security Vulnerabilities
+**Function Raw SQL:**
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Function                        | Keterangan                                  |
+| ------------------------------- | ------------------------------------------- |
+| DB::insert(sql, array): bool    | Untuk melakukan insert data                 |
+| DB::update(sql, array): int     | Untuk melaukan update data                  |
+| DB::delete(sql, array): int     | Untuk melakukan delete data                 |
+| DB::select(sql, array): array   | Untuk melakukan select data                 |
+| DB::statement(sql, array): bool | Untuk melakukan jenis sql lain              |
+| DB::unprepared(sql): bool       | Untuk melakukan sql bukan preapre statement |
 
-## License
+```php
+namespace Tests\Feature;
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
+
+class RawQueryTest extends TestCase
+{
+
+    private string $category = 'categories';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        DB::delete("DELETE FROM categories");
+    }
+
+    public function testCrud(): void
+    {
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "GADGET", "Gadget", "Gadget Category", "2023-10-10 08:15:15"
+        ]);
+
+        $result = DB::select("SELECT * FROM $this->category WHERE id = ?", ['GADGET']);
+
+        self::assertCount(1, $result);
+        self::assertEquals('GADGET', $result[0]->id);
+        self::assertEquals('Gadget', $result[0]->name);
+        self::assertEquals('Gadget Category', $result[0]->description);
+        self::assertEquals('2023-10-10 08:15:15', $result[0]->created_at);
+    }
+}
+```
+
+## Named Binding
+
+-   Kadang menggunakan parameter ? (tanda tanya) membingungkan saat kita membuat query dengan paremeter yang banyak
+-   Laravel mendukung fitur bernama `named binding`, sehingga kita bisa mengganti ? (tanda tanya) menjadi nama parameter dan data bisa kita kirim menggunakan array dengan key sesuai nama parameter nya
+
+```php
+public function testCrudNamedBinding(): void
+{
+    DB::insert("INSERT INTO $this->category(id, name, description, created_at)
+        VALUES(:id, :name, :description, :created_at)", [
+        "id" => "GADGET",
+        "name" => "Gadget",
+        "description" => "Gadget Category",
+        "created_at" => "2023-10-10 08:15:15"
+    ]);
+
+    $result = DB::select("SELECT * FROM $this->category WHERE id = ?", ['GADGET']);
+
+    self::assertCount(1, $result);
+    self::assertEquals('GADGET', $result[0]->id);
+    self::assertEquals('Gadget', $result[0]->name);
+    self::assertEquals('Gadget Category', $result[0]->description);
+    self::assertEquals('2023-10-10 08:15:15', $result[0]->created_at);
+}
+```
+
+## Database Transaction
+
+-   Laravel Database juga memiliki fitur untuk melakukan database transaction secara otomatis
+-   Dengan begitu, kita tidak perlu melakukan start transaction dan commit/rollback secara manual lagi
+-   Kita bisa menggunakan function `DB::transactions(function)`
+-   Di dalam function tersebut kita bisa melakukan perintah database, jika terjadi error, secara otomatis transaksi akan di rollback
+
+**Test Success:**
+
+```php
+public function testTransactionSuccess()
+{
+    DB::transaction(function () {
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "GADGET", "Gadget", "Gadget Category", "2023-10-10 08:15:15"
+        ]);
+
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "FOOD", "Strawberry", "Food Category", "2023-10-10 08:15:15"
+        ]);
+    });
+
+    $results = DB::select("SELECT * FROM $this->category");
+
+    self::assertCount(2, $results);
+}
+```
+
+**Test Failed:**
+
+```php
+public function testTransactionFailed()
+{
+    try {
+        DB::transaction(function () {
+            DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+                "GADGET", "Gadget", "Gadget Category", "2023-10-10 08:15:15"
+            ]);
+
+            DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+                "GADGET", "Handphone", "Handphone Category", "2023-10-10 08:15:15"
+            ]);
+        });
+    } catch (QueryException $err) {
+        // expected
+    }
+
+    $results = DB::select("SELECT * FROM $this->category");
+
+    self::assertCount(0, $results);
+}
+```
+
+## Manual Database Transaction
+
+-   Selain menggunakan fitur otomatis, kita juga bisa melakukan database transaction secara manual menggunakan Laravel Database
+-   Kita bisa gunakan beberapa function
+-   `DB::beginTransaction()` untuk memulai transaksi
+-   `DB::commit()` untuk melakukan commit transaksi
+-   `DB::rollBack()` untuk melakukan rollback transaksi
+
+**Test Success:**
+
+```php
+public function testManualTransactionSuccess()
+{
+    try {
+        DB::beginTransaction();
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "GADGET", "Gadget", "Gadget Category", "2023-10-10 08:15:15"
+        ]);
+
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "HANDPHONE", "Handphone", "Handphone Category", "2023-10-10 08:15:15"
+        ]);
+        DB::commit();
+    } catch (QueryException $err) {
+        DB::rollBack();
+    }
+
+    $results = DB::select("SELECT * FROM $this->category");
+
+    self::assertCount(2, $results);
+}
+```
+
+**Test Failed:**
+
+```php
+public function testManualTransactionFailed()
+{
+    try {
+        DB::beginTransaction();
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "GADGET", "Gadget", "Gadget Category", "2023-10-10 08:15:15"
+        ]);
+
+        DB::insert("INSERT INTO $this->category(id, name, description, created_at) VALUES(?, ?, ?, ?)", [
+            "GADGET", "Handphone", "Handphone Category", "2023-10-10 08:15:15"
+        ]);
+        DB::commit();
+    } catch (QueryException $err) {
+        DB::rollBack();
+    }
+
+    $results = DB::select("SELECT * FROM $this->category");
+
+    self::assertCount(0, $results);
+}
+```
