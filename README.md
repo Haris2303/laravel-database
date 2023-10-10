@@ -30,6 +30,16 @@ Laravel is accessible, powerful, and provides tools required for large, robust a
 -   [Named Binding](#named-binding)
 -   [Database Transaction](#database-transaction)
 -   [Manual Database Transaction](#manual-database-transaction)
+-   [Database Commands](#database-commands)
+-   [Query Builder](#query-builder)
+    -   [Insert](#query-builder-insert)
+    -   [Select](#query-builder-select)
+    -   [Where](#query-builder-where)
+    -   [Update](#query-builder-where)
+    -   [Delete](#query-builder-delete)
+    -   [Join](#query-builder-join)
+    -   [Ordering](#query-builder-ordering)
+    -   [Paging](#query-builder-paging)
 
 ## Debug Query
 
@@ -257,5 +267,123 @@ public function testManualTransactionFailed()
     $results = DB::select("SELECT * FROM $this->category");
 
     self::assertCount(0, $results);
+}
+```
+
+## Database Commands
+
+-   Artisan file di laravel memiliki banyak sekali fitur, salah satunya adalah perintah db
+-   Ada banyak sekali perintah db yang bisa kita gunakan
+-   `php artisan db`, untuk mengakses terminal database, misal mysql
+-   `php artisan db:table`, untuk melihat seluruh table di database
+-   `php artisan db:show`, untuk melihat informasi database
+-   `php artisan db:monitor`, unutk memonitor jumlah koneksi di database
+-   `php artisan db:seed`, untuk menambah data di database
+-   `php artisan db:wipe`, untuk menghapus seluruh table di database
+
+## Query Builder
+
+-   Selain menggunakan Raw Sql, Laravel Database juga memiliki fitur bernama Query Builder
+-   Fitur ini sangat mempermudah kita ketika ingin membuat perintah ke database dibandingkan melakukannya secara manual menggunakan Raw Sql
+-   Query Builder direpresentasikan dengan class Builder
+-   https://laravel.com/api/10x/Illuminate/Database/Query/Builder.html
+-   Untuk membuat Query Builder, kita bisa gunakan function `DB::table(name)`
+
+## Query Builder Insert
+
+-   Untuk melakukan insert menggunakan Query Builder, kita bisa menggunakan method dengan prefix insert dengan parameter associative array dimana key adalah kolom, dan value nya adalah nilai yang akan disimpan di database
+-   `insert()` untuk memasukkan data ke database, throw exception jika terjadi error misal duplicate primary key
+-   `insertGetId()` untuk memasukkan data ke database, dan mengembalikan primary key yang diset secara auto generate, cocok untuk table dengan id auto increment
+-   `insertOrIgnore()` untuk memasukkan data ke database, dan jika terjadi error, maka akan di ignore
+
+```php
+DB::table("categories")->insert([
+    'id' => 'MOBIL',
+    'name' => 'Mobil'
+]);
+
+DB::table('categories')->insert([
+    'id' => 'SINARMAS',
+    'name' => 'Sinarmas'
+]);
+
+$result = DB::select("SELECT COUNT(id) AS total FROM categories");
+$this->assertEquals(2, $result[0]->total);
+```
+
+## Query Builder Select
+
+-   Ada beberapa function di Query Builder yang bisa kita gunakan untuk melakukan perintah select
+-   `select(columns)`, untuk mengubah select kolom, dimana defaultnya adalah semua kolom
+-   Setelah itu, untuk mengeksekusi SQL dan menyimpannya di Collection secara langsung, kita bisa menggunakan beberapa method
+-   `get(columns)`, untuk mengambil seluruh data, defaultnya semua kolom diambil
+-   `first(columns)`, untuk mengambil data pertama, defaultnya semua kolom diambil
+-   `pluck(columns)`, untuk mengambil salah satu kolom saja
+-   Hasil daru Query Builder Select adalah Laravel Collection
+
+```php
+$collection = DB::table('categories')->select(['id', 'name'])->get();
+
+$this->assertNotNull($collection);
+
+$collection->each(function ($item) {
+    Log::info(json_encode($item));
+});
+```
+
+## Query Builder Where
+
+-   Untuk menambahkan Where di Query Builder, kita bisa menggunakan banyak sekali method dengan awalan `where...()`
+
+| Method                           | Keterangan                                |
+| -------------------------------- | ----------------------------------------- |
+| where(column, operator, value)   | AND column operator value                 |
+| where([condition1, condition2])  | AND (condition 1 AND condition 2 AND ...) |
+| where(callback(Builder))         | AND (condition)                           |
+| orWhere(column, operator, value) | OR (condition)                            |
+| orWhere(callback(Builder))       | OR (condition)                            |
+| whereNot(callback(Builder))      | NOT (condition)                           |
+
+```php
+public function insertCategories()
+{
+    DB::table("categories")->insert([
+        'id' => 'GLASSES',
+        'name' => 'Glasses',
+        'created_at' => '2023-10-10 10:10:10'
+    ]);
+    DB::table("categories")->insert([
+        'id' => 'CAR',
+        'name' => 'Car',
+        'created_at' => '2023-10-10 10:10:10'
+    ]);
+    DB::table("categories")->insert([
+        'id' => 'OAK',
+        'name' => 'Oak',
+        'created_at' => '2023-10-10 10:10:10'
+    ]);
+    DB::table("categories")->insert([
+        'id' => 'BOOK',
+        'name' => 'Book',
+        'created_at' => '2023-10-10 10:10:10'
+    ]);
+}
+```
+
+```php
+public function testWhere()
+{
+    $this->insertCategories();
+
+    $collection = DB::table('categories')->where(function (Builder $builder) {
+        $builder->where('id', '=', 'BOOK');
+        $builder->orWhere('id', '=', 'CAR');
+    })->get();
+
+    $this->assertCount(2, $collection);
+
+    $collection->each(function ($item) {
+        Log::info(json_encode($item));
+    });
 }
 ```
