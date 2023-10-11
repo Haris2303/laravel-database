@@ -325,10 +325,6 @@ $this->assertEquals(2, $result[0]->total);
 $collection = DB::table('categories')->select(['id', 'name'])->get();
 
 $this->assertNotNull($collection);
-
-$collection->each(function ($item) {
-    Log::info(json_encode($item));
-});
 ```
 
 ## Query Builder Where
@@ -381,9 +377,86 @@ public function testWhere()
     })->get();
 
     $this->assertCount(2, $collection);
+}
+```
 
-    $collection->each(function ($item) {
-        Log::info(json_encode($item));
-    });
+**Where Between Method**
+
+| Where Method                              | Keterangan                                 |
+| ----------------------------------------- | ------------------------------------------ |
+| whereBetween(column, [value1, value2])    | WHERE column BETWEEN value1 AND value2     |
+| whereNotBetween(column, [value1, value2]) | WHERE column NOT BETWEEN value1 AND value2 |
+
+```php
+public function testWhereBetween()
+{
+    $this->insertCategories();
+
+    $collection = DB::table('categories')->whereBetween(
+        'created_at',
+        ['2023-10-10 10:10:10', '2023-11-10 10:10:10']
+    )->get();
+
+    $this->assertCount(4, $collection);
+}
+```
+
+**Where In Method**
+
+| Where Method                | Keterangan                  |
+| --------------------------- | --------------------------- |
+| whereIn(column, [array])    | WHERE column IN (array)     |
+| whereNotIn(column, [array]) | WHERE column NOT IN (array) |
+
+```php
+public function testWhereIn()
+{
+    $this->insertCategories();
+
+    $collection = DB::table('categories')->whereIn(
+        'id',
+        ['OAK', 'GLASSES']
+    )->get();
+
+    $this->assertCount(2, $collection);
+}
+```
+
+**Where Null Method**
+
+| Where Method         | Keterangan               |
+| -------------------- | ------------------------ |
+| whereNull(column)    | WHERE column IS NULL     |
+| whereNotNull(column) | WHERE column IS NOT NULL |
+
+```php
+public function testWhereNull()
+{
+    $this->insertCategories();
+
+    $collection = DB::table('categories')->whereNull('description')->get();
+
+    $this->assertCount(4, $collection);
+}
+```
+
+**Where Date Method**
+
+| Where Method              | Keterangan                  |
+| ------------------------- | --------------------------- |
+| whereDate(column, value)  | WHERE DATE(column) = value  |
+| whereMonth(column, value) | WHERE MONTH(column) = value |
+| whereDay(column, value)   | WHERE DAY(column) = value   |
+| whereYear(column, value)  | WHERE YEAR(column) = value  |
+| whereTime(column, value)  | WHERE TIME(column) = value  |
+
+```php
+public function testWhereDate()
+{
+    $this->insertCategories();
+
+    $collection = DB::table('categories')->whereDate('created_at', '2023-10-10')->get();
+
+    $this->assertCount(4, $collection);
 }
 ```
