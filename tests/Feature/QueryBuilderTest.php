@@ -143,4 +143,17 @@ class QueryBuilderTest extends TestCase
             Log::info(json_encode($item));
         });
     }
+
+    public function testUpdate()
+    {
+        $this->insertCategories();
+
+        DB::table("categories")->where("id", "=", "CAR")->update([
+            "name" => "Sport"
+        ]);
+
+        $collection = DB::table('categories')->where('name', '=', 'Sport')->get();
+
+        $this->assertCount(1, $collection);
+    }
 }

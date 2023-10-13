@@ -35,7 +35,7 @@ Laravel is accessible, powerful, and provides tools required for large, robust a
     -   [Insert](#query-builder-insert)
     -   [Select](#query-builder-select)
     -   [Where](#query-builder-where)
-    -   [Update](#query-builder-where)
+    -   [Update](#query-builder-update)
     -   [Delete](#query-builder-delete)
     -   [Join](#query-builder-join)
     -   [Ordering](#query-builder-ordering)
@@ -460,3 +460,28 @@ public function testWhereDate()
     $this->assertCount(4, $collection);
 }
 ```
+
+## Query Builder Update
+
+-   Untuk melakukan Update, kita bisa menggunakan method `update(array)`
+-   Dimana parameter nya kita bisa mengirim associative array yang berisi kolom => value
+
+```php
+public function testUpdate()
+{
+    $this->insertCategories();
+
+    DB::table("categories")->where("id", "=", "CAR")->update([
+        "name" => "Sport"
+    ]);
+
+    $collection = DB::table('categories')->where('name', '=', 'Sport')->get();
+
+    $this->assertCount(1, $collection);
+}
+```
+
+**Upsert (Update or Insert)**
+
+-   Query Builder menyediakan method untuk melakukan update or insert, dimana ketika mencoba melakukan update, jika datanya tidak ada, maka akan dilakukan insert data baru
+-   Kita bisa menggunakan method `updateOrInsert(attributes, value)`
