@@ -485,3 +485,57 @@ public function testUpdate()
 
 -   Query Builder menyediakan method untuk melakukan update or insert, dimana ketika mencoba melakukan update, jika datanya tidak ada, maka akan dilakukan insert data baru
 -   Kita bisa menggunakan method `updateOrInsert(attributes, value)`
+
+```php
+public function testUpsert()
+{
+    DB::table("categories")->updateOrInsert([
+        "id" => "VOUCHER"
+    ], [
+        "name" => "Voucher",
+        "description" => "Ticket and Voucher",
+        "created_at" => "2020-10-10 10:10:10"
+    ]);
+
+    $collection = DB::table("categories")->where("id", "=", "Voucher")->get();
+
+    $this->assertCount(1, $collection);
+}
+```
+
+**Increment dan Decrement**
+
+-   Query Builder juga menyediakan cara mudah untuk melakukan increment dan decrement
+-   Jadi kita tidak perlu melakukan increment atau decrement secara manual di kode PHP
+-   Kita bisa menggunakan method
+-   `increment(column, increment)` untuk melakukan increment
+-   `decrement(column, decrement)` untuk melakukan decrement
+
+**Membuat Tabel Counter**
+
+```SQL
+CREATE TABLE counters
+(
+    id      VARCHAR(100) NOT NULL PRIMARY KEY,
+    counter INT NOT NULL DEFAULT 0
+) ENGINE innodb;
+
+INSERT INTO counters (id, counter) VALUES('sample', 0);
+
+SELECT * FROM counters;
+```
+
+**Kode Increment:**
+
+```php
+public function testIncrement()
+{
+    DB::table("counters")->where("id", "=", "sample")->increment("counter", 1);
+
+    $collection = DB::table("counters")->where("id", "=", "sample")->get();
+
+    $this->assertCount(1, $collection);
+}
+```
+
+> Source Material from [Programmer Zaman Now](https://programmerzamannow.com)
