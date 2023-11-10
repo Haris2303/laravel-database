@@ -311,4 +311,146 @@ class QueryBuilderTest extends TestCase
             LOG::info(json_encode($item));
         });
     }
+
+    public function testAggregate()
+    {
+        $this->insertProducts();
+
+        // count()
+        $result = DB::table('products')->count('id');
+        $this->assertEquals(2, $result);
+
+        // min()
+        $result = DB::table('products')->min('price');
+        $this->assertEquals(30000, $result);
+
+        // avg()
+        $result = DB::table('products')->avg('price');
+        $this->assertEquals(57500, $result);
+
+        // sum()
+        $result = DB::table('products')->sum('price');
+        $this->assertEquals(115000, $result);
+    }
+
+    public function testQueryBuilderRaw()
+    {
+        $this->insertProducts();
+
+        $collection = DB::table('products')
+            ->select(
+                DB::raw("count(id) as total_product"),
+                DB::raw("min(price) as min_price"),
+                DB::raw("max(price) as max_price"),
+            )->get();
+
+        $this->assertEquals(2, $collection[0]->total_product);
+        $this->assertEquals(30000, $collection[0]->min_price);
+        $this->assertEquals(85000, $collection[0]->max_price);
+    }
+
+    public function insertProductBook()
+    {
+        DB::table("products")->insert([
+            "id" => "3",
+            "name" => "Kacamata Hitam",
+            "category_id" => "GLASSES",
+            "price" => 25000
+        ]);
+
+        DB::table("products")->insert([
+            "id" => "4",
+            "name" => "Kacamata Potocromic",
+            "category_id" => "GLASSES",
+            "price" => 20000
+        ]);
+    }
+
+    public function testGroupBy()
+    {
+        $this->insertProducts();
+        $this->insertProductBook();
+
+        $collection = DB::table("products")
+            ->select("category_id", DB::raw("count(*) as total_product"))
+            ->groupBy("category_id")
+            ->orderBy("category_id", "desc")
+            ->get();
+
+        $this->assertCount(2, $collection);
+        $this->assertEquals("GLASSES", $collection[0]->category_id);
+        $this->assertEquals("BOOK", $collection[1]->category_id);
+        $this->assertEquals(2, $collection[0]->total_product);
+        $this->assertEquals(2, $collection[1]->total_product);
+    }
+
+    public function testGroupByHaving()
+    {
+        $this->insertProducts();
+        $this->insertProductBook();
+
+        $collection = DB::table("products")
+            ->select("category_id", DB::raw("count(*) as total_product"))
+            ->groupBy("category_id")
+            ->having(DB::raw("count(*)"), ">", "2")
+            ->orderBy("category_id", "desc")
+            ->get();
+
+        $this->assertCount(0, $collection);
+    }
+
+    public function testLocking()
+    {
+        $this->insertProducts();
+
+        DB::transaction(function () {
+            $collection = DB::table('products')
+                ->where('id', '=', '1')
+                ->lockForUpdate()
+                ->get();
+
+            $this->assertCount(1, $collection);
+        });
+    }
+
+    public function testPagination()
+    {
+        $this->insertCategories();
+
+        $paginate = DB::table("categories")->paginate(2);
+
+        $this->assertEquals(1, $paginate->currentPage());
+        $this->assertEquals(2, $paginate->perPage());
+        $this->assertEquals(2, $paginate->lastPage());
+        $this->assertEquals(4, $paginate->total());
+
+        $collection = $paginate->items();
+        $this->assertCount(2, $collection);
+        foreach ($collection as $item) {
+            LOG::info(json_encode($item));
+        }
+    }
+
+    public function testIterasiAllPagination()
+    {
+        $this->insertCategories();
+
+        $page = 1;
+
+        while (true) {
+            $paginate = DB::table("categories")->paginate(perPage: 2, page: $page);
+
+            if ($paginate->isEmpty()) {
+                break;
+            } else {
+                $page++;
+
+                $collection = $paginate->items();
+                $this->assertCount(2, $collection);
+                foreach ($collection as $item) {
+                    LOG::info(json_encode($item));
+                }
+            }
+        }
+    }
 }
