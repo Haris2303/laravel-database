@@ -23,3 +23,9 @@ SHOW TABLES;
 DESC categories;
 
 DELETE FROM products;
+
+DROP TABLE products;
+DROP TABLE categories;
+DROP TABLE counters;
+
+SHOW TABLES;
