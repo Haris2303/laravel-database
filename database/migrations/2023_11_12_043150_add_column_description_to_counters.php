@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('counters', function (Blueprint $table) {
-            $table->string('id', 100)->nullable(false)->primary();
-            $table->integer('counter')->nullable(false)->default(0);
+        Schema::table('counters', function (Blueprint $table) {
+            $table->text('description')->nullable(true);
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('counters');
+        Schema::table('counters', function (Blueprint $table) {
+            $table->dropColumn('description');
+        });
     }
 };

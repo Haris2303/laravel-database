@@ -29,3 +29,7 @@ DROP TABLE categories;
 DROP TABLE counters;
 
 SHOW TABLES;
+
+DESC counters;
+
+SELECT * FROM categories;

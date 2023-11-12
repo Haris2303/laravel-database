@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\CounterSeeder;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -16,6 +18,7 @@ class QueryBuilderTest extends TestCase
         parent::setUp();
         DB::delete("DELETE FROM products");
         DB::delete("DELETE FROM categories");
+        DB::delete("DELETE FROM counters");
     }
 
     public function testInsert()
@@ -49,26 +52,7 @@ class QueryBuilderTest extends TestCase
 
     public function insertCategories()
     {
-        DB::table("categories")->insert([
-            'id' => 'GLASSES',
-            'name' => 'Glasses',
-            'created_at' => '2023-10-10 10:10:10'
-        ]);
-        DB::table("categories")->insert([
-            'id' => 'CAR',
-            'name' => 'Car',
-            'created_at' => '2023-10-10 10:10:10'
-        ]);
-        DB::table("categories")->insert([
-            'id' => 'OAK',
-            'name' => 'Oak',
-            'created_at' => '2023-10-10 10:10:10'
-        ]);
-        DB::table("categories")->insert([
-            'id' => 'BOOK',
-            'name' => 'Book',
-            'created_at' => '2023-10-10 10:10:10'
-        ]);
+        $this->seed(CategorySeeder::class);
     }
 
     public function testWhere()
@@ -178,6 +162,7 @@ class QueryBuilderTest extends TestCase
 
     public function testIncrement()
     {
+        $this->seed(CounterSeeder::class);
         DB::table("counters")->where("id", "=", "sample")->increment("counter", 1);
 
         $collection = DB::table("counters")->where("id", "=", "sample")->get();
